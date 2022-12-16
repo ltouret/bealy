@@ -6,7 +6,7 @@
 #    By: ltouret <ltouret@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2021/12/16 19:31:14 by ltouret           #+#    #+#              #
-#    Updated: 2022/12/15 00:21:42 by ltouret          ###   ########.fr        #
+#    Updated: 2022/12/15 14:50:14 by ltouret          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,6 +20,9 @@ clean:
 	sudo docker rm $$(sudo docker ps -aq)
 
 fclean:
-	./fclean.sh
+	sudo ./fclean.sh
+
+clean_modules:
+	sudo rm -rf server/dist server/node_modules
 
 .PHONY: prod, dev, clean, fclean 

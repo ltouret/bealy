@@ -1,4 +1,6 @@
 #!/bin/sh
+rm -rf server/node_modules
+rm -rf server/dist
 npm cache clean --force
 yarn cache clean
 docker ps -q | xargs docker stop
