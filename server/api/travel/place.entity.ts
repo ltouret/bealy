@@ -24,7 +24,7 @@ export class Place extends BaseEntity {
     @Column({type: 'int4'})
       score: number;
 
-    // add here a boolean for favorite
+    // add here a boolean for favorite places
 
     // 2fa ???????????
     // @Column({type: 'varchar', length: 70, nullable: true})

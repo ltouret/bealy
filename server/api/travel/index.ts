@@ -1,9 +1,8 @@
 import express, {Request, Response} from 'express';
-import { body, param, validationResult } from 'express-validator';
+import { body, param, query, validationResult } from 'express-validator';
 import { Place } from './place.entity'
 import { myDataSource } from "../../app-data-source"
 import * as entity from './entity.d';
-import { type } from 'os';
 import { DeleteResult } from 'typeorm';
 
 const router = express.Router();
@@ -42,7 +41,7 @@ router.post("/",
         // const place : entity.ITravelItemId = {id : id, ...(whitelist(req.body, "title", "description", "localisation", "score"))};
         // TravelList.push(place);
         // console.log(TravelList);
-        console.log(req.body, typeof(req.body.score));
+        // console.log(req.body, typeof(req.body.score));
 
         const place : Place = myDataSource.getRepository(Place).create(whitelist(req.body, "title", "description", "localisation", "score"));
         const results : Place = await myDataSource.getRepository(Place).save(place);
@@ -78,7 +77,7 @@ router.put("/",
         if (place_to_modify) {
             myDataSource.getRepository(Place).merge(place_to_modify, place_received);
             const results : Place = await myDataSource.getRepository(Place).save(place_to_modify);
-            console.log(results);
+            // console.log(results);
             return res.status(200).json(results);
         }
         return res.status(400).send({error: "Resource doesnt exist"});
@@ -105,7 +104,7 @@ router.delete("/:id",
             return res.status(400).json({ errors: errors.array()});
 
 
-        const id: number = JSON.parse(req.params.id);
+        const id: number = Number(req.params.id);
         const result : DeleteResult = await myDataSource.getRepository(Place).delete(id);
         if (result.affected)
             return res.status(200).send({status : 'Place deleted'});
@@ -113,9 +112,39 @@ router.delete("/:id",
 });
 
 // GET ALL
+// add more info if no elems? like no elems in db?
 router.get("/", async (req : Request, res : Response) => {
     const places : Place[] = await myDataSource.getRepository(Place).find();
+    if (places.length === 0)
+        return res.status(404).send();
     return res.status(200).json(places);
+});
+
+// this is overkill cos i use param.toInt and JSON.parse that do the same!!!
+// return place.score >= score
+router.get("/score",
+    query('score').isInt().withMessage("score query has to be an integer"),
+    query('score').not().isEmpty().toInt().withMessage("score query cannot be empty"),
+    async (req : Request, res : Response) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty())
+            return res.status(400).json({ errors: errors.array()});
+
+        
+        const score: number  = Number(req.query.score);
+        // console.log(req.query, typeof(req.query), typeof(req.query.score), score, typeof(score));
+        const places : Place[] = await myDataSource.getRepository(Place).find();
+        if (places) {
+            const returned_places : Place[] = [];
+            (places.forEach(place => {
+                if (place.score >= score)
+                    returned_places.push(place);
+                }
+            ));
+            // console.log(places.forEach(place => {let arr: any = []; if (place.score >= score) arr.push(place); return arr; console.log(arr)}));
+            return res.status(200).json(returned_places);
+        }
+        return res.status(404).send();
 });
 
 // SEARCH WITH ID
@@ -128,7 +157,7 @@ router.get("/:id",
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array()});
 
-        const id: number = JSON.parse(req.params.id);
+        const id: number = Number(req.params.id);
         const place : Place | null = await myDataSource.getRepository(Place).findOneBy({
             id : id
         });
@@ -137,36 +166,14 @@ router.get("/:id",
         return res.status(404).send();
 });
 
-// this is overkill cos i use param.toInt and JSON.parse that do the same!!!
-// return place.score >= score
-router.get("/score/:score",
-    param('score').isInt(),
-    param('score').not().isEmpty().toInt(),
-    async (req : Request, res : Response) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty())
-            return res.status(400).json({ errors: errors.array()});
-
-        const score: number = JSON.parse(req.params.score);
-        const places : Place[] | null = await myDataSource.getRepository(Place).find();
-        if (places) {
-            (places.forEach(place => place.score >= score));
-            // console.log(places.forEach(place => {let arr: any = []; if (place.score >= score) arr.push(place); return arr; console.log(arr)}));
-            return res.status(200).json(places);
-        }
-        return res.status(404).send();
-});
 
 // 2fa??
 
 // SEARCH WITH STRING? TITLE, DESCRIPTION, LOCALISATION
 
-// SEARCH BETTER THAN > SCORE
-
-
 /*
 Authentication
-Lieu favoris
+Lieu favoris, route to add and to delete
 */
 
 export default router;
