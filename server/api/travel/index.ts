@@ -1,5 +1,6 @@
 import express, {Request, Response} from 'express';
 import { body, validationResult } from 'express-validator';
+import { Place } from './place.entity'
 import * as entity from './entity.d';
 
 const router = express.Router();

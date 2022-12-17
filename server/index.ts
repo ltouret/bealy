@@ -3,6 +3,18 @@ import dotenv from 'dotenv';
 import travelRouter from './api/travel';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import { myDataSource } from "./app-data-source"
+import { Place } from './api/travel/place.entity' // most likely not needed here
+
+
+myDataSource
+    .initialize()
+    // .then(() => {
+    //     console.log("Data Source has been initialized!")
+    // })
+    .catch((err) => {
+        console.error("Error during Data Source initialization:", err)
+    })
 
 dotenv.config();
 
