@@ -1,18 +1,17 @@
 import express, {Request, Response} from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { Place } from './place.entity'
+import { validation_errors } from './validation-errors'
 import { myDataSource } from "../../app-data-source"
-import * as entity from './entity.d';
 import { DeleteResult } from 'typeorm';
 
 const router = express.Router();
-let TravelList : entity.ITravelItemId[] = [];
 
 router.get("/alive", (req : Request, res : Response) => {
     res.send(true);
 });
 
-// Whitelist only selected keys in received data
+// Whitelist only selected keys ignore the rest
 function whitelist<T, K extends keyof T>(obj: T, ...keys: K[]): Pick<T, K> {
     const copy = {} as Pick<T, K>;
     keys.forEach(key => copy[key] = obj[key]);
@@ -21,89 +20,64 @@ function whitelist<T, K extends keyof T>(obj: T, ...keys: K[]): Pick<T, K> {
 
 // ADD
 router.post("/",
-    body('title').isString().isLength({min:1, max: 20}),
-    body('title').not().isEmpty().trim().escape(),
-    body('description').isString().isLength({min:1, max: 60}),
-    body('description').not().isEmpty().trim().escape(),
-    body('localisation').isString().isLength({min:1, max: 60}),
-    body('localisation').not().isEmpty().trim().escape(),
-    body('score').isInt(),
-    body('score').not().isEmpty().toInt(),
+    body('title', validation_errors.title).isString().isAlphanumeric(undefined, {ignore: " "}).isLength({min:1, max: 20}),
+    body('title').trim().escape(),
+    body('description', validation_errors.description).isString().isAlphanumeric(undefined, {ignore: " "}).isLength({min:1, max: 60}),
+    body('description').trim().escape(),
+    body('localisation', validation_errors.localisation).isString().isAlphanumeric(undefined, {ignore: " "}).isLength({min:1, max: 60}),
+    body('localisation').trim().escape(),
+    body('score', validation_errors.score).isInt(),
+    body('score').toInt(),
     async (req : Request, res : Response) => {
-        // add better errors? more verbose?
+        console.log(req.body.title);
         const errors = validationResult(req);
         if (!errors.isEmpty())
-            return res.status(400).json({ errors: errors.array()});
-        
-
-        //add database stuff here later
-        // const id :number = TravelList.length + 1;
-        // const place : entity.ITravelItemId = {id : id, ...(whitelist(req.body, "title", "description", "localisation", "score"))};
-        // TravelList.push(place);
-        // console.log(TravelList);
-        // console.log(req.body, typeof(req.body.score));
-
+            return res.status(400).json({ errors: errors.array() });
         const place : Place = myDataSource.getRepository(Place).create(whitelist(req.body, "title", "description", "localisation", "score"));
         const results : Place = await myDataSource.getRepository(Place).save(place);
-        // console.log(results);
-
         return res.status(201).json(results);
     }
 );
 
 // UPDATE
-// for now this only updates doesnt create if id doesnt exist 
+// for now this only updates doesnt create if id doesnt exist
 router.put("/",
-    body('id').isInt(),
-    body('id').not().isEmpty().toInt(),
-    body('title').isString().isLength({min:1, max: 20}),
-    body('title').not().isEmpty().trim().escape(),
-    body('description').isString().isLength({min:1, max: 60}),
-    body('description').not().isEmpty().trim().escape(),
-    body('localisation').isString().isLength({min:1, max: 60}),
-    body('localisation').not().isEmpty().trim().escape(),
-    body('score').isInt(),
-    body('score').not().isEmpty().toInt(),
+    body('id', validation_errors.id).isInt(),
+    body('id').toInt(),
+    body('title', validation_errors.title).isString().isAlphanumeric(undefined, {ignore: " "}).isLength({min:1, max: 20}),
+    body('title').trim().escape(),
+    body('description', validation_errors.description).isString().isAlphanumeric(undefined, {ignore: " "}).isLength({min:1, max: 60}),
+    body('description').trim().escape(),
+    body('localisation', validation_errors.localisation).isString().isAlphanumeric(undefined, {ignore: " "}).isLength({min:1, max: 60}),
+    body('localisation').trim().escape(),
+    body('score', validation_errors.score).isInt(),
+    body('score').toInt(),
     async (req : Request, res : Response) => {
-        // add better errors? more verbose?
+        console.log(req.body);
         const errors = validationResult(req);
         if (!errors.isEmpty())
-            return res.status(400).json({ errors: errors.array()});
-
-        const place_received : entity.ITravelItemId = (whitelist(req.body, "id", "title", "description", "localisation", "score"));
+            return res.status(400).json({ errors: errors.array() });
+        const place_received : Place = myDataSource.getRepository(Place).create(whitelist(req.body, "id", "title", "description", "localisation", "score"));
         const place_to_modify : Place | null = await myDataSource.getRepository(Place).findOneBy({
             id : place_received.id
         });
         if (place_to_modify) {
             myDataSource.getRepository(Place).merge(place_to_modify, place_received);
             const results : Place = await myDataSource.getRepository(Place).save(place_to_modify);
-            // console.log(results);
             return res.status(200).json(results);
         }
         return res.status(400).send({error: "Resource doesnt exist"});
-
-        // //add database stuff here later
-        // const id : number = req.body.id;
-        // if (TravelList.length === 0 || id - 1 > TravelList.length)
-        //     return res.status(400).send({error: "Resource doesnt exist"});
-            
-        // TravelList[id - 1] = {id: id, ...(whitelist(req.body, "title", "description", "localisation", "score"))};
-        // // console.log(TravelList);
-        // return res.status(200).send(TravelList[id - 1]); // not necessary to return object, should return 204
 });
 
 // DELETE
 // the status returns from this needs to be changed
-// this is overkill cos i use param.toInt and JSON.parse that do the same!!!
 router.delete("/:id",
-    param('id').isInt(),
-    param('id').not().isEmpty().toInt(),
+    param('id', validation_errors.id).isInt(),
+    param('id').toInt(),
     async (req : Request, res : Response) => {
         const errors = validationResult(req);
         if (!errors.isEmpty())
-            return res.status(400).json({ errors: errors.array()});
-
-
+            return res.status(400).json({ errors: errors.array() });
         const id: number = Number(req.params.id);
         const result : DeleteResult = await myDataSource.getRepository(Place).delete(id);
         if (result.affected)
@@ -120,43 +94,38 @@ router.get("/", async (req : Request, res : Response) => {
     return res.status(200).json(places);
 });
 
-// this is overkill cos i use param.toInt and JSON.parse that do the same!!!
-// return place.score >= score
+
+// GET ALL PLACES WITH SCORE EQUAL OR LARGE THAN THE PARAMETER SCORE
 router.get("/score",
-    query('score').isInt().withMessage("score query has to be an integer"),
-    query('score').not().isEmpty().toInt().withMessage("score query cannot be empty"),
+    query('score', validation_errors.score).isInt(),
+    query('score').toInt(),
     async (req : Request, res : Response) => {
         const errors = validationResult(req);
         if (!errors.isEmpty())
-            return res.status(400).json({ errors: errors.array()});
-
-        
-        const score: number  = Number(req.query.score);
-        // console.log(req.query, typeof(req.query), typeof(req.query.score), score, typeof(score));
+            return res.status(400).json({ errors: errors.array() });
+        const score: number = Number(req.query.score);
         const places : Place[] = await myDataSource.getRepository(Place).find();
-        if (places) {
+        if (places.length > 0) {
             const returned_places : Place[] = [];
-            (places.forEach(place => {
+            places.forEach(place => {
                 if (place.score >= score)
                     returned_places.push(place);
                 }
-            ));
-            // console.log(places.forEach(place => {let arr: any = []; if (place.score >= score) arr.push(place); return arr; console.log(arr)}));
-            return res.status(200).json(returned_places);
+            );
+            if (returned_places.length > 0)
+                return res.status(200).json(returned_places);
         }
         return res.status(404).send();
 });
 
 // SEARCH WITH ID
-// this is overkill cos i use param.toInt and JSON.parse that do the same!!!
 router.get("/:id",
-    param('id').isInt(),
-    param('id').not().isEmpty().toInt(),
+    param('id', validation_errors.id).isInt(),
+    param('id').toInt(),
     async (req : Request, res : Response) => {
         const errors = validationResult(req);
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array()});
-
         const id: number = Number(req.params.id);
         const place : Place | null = await myDataSource.getRepository(Place).findOneBy({
             id : id
