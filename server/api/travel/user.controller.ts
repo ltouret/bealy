@@ -1,5 +1,5 @@
 import express, {NextFunction, Request, Response} from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken'
 import { validation_errors } from './validation-errors'
 import { myDataSource } from "../../app-data-source"
@@ -14,59 +14,30 @@ router.get("/alive", async (req : Request, res : Response) => {
     return res.send(true);
 });
 
-// more just send status no text?
 export const authGuard = async (
     req: Request,
     res: Response,
     next: NextFunction) => {
         const accessToken: string = req.cookies.access_token;
-
-        if (accessToken === undefined)
-            return res.status(401).send(validation_errors.not_logged);
-
-        // console.log(accessToken);
         try {
             const decoded = jwt.verify(accessToken, accessTokenSecret);
-            decoded.sub = undefined;
-            console.log(decoded, Number(decoded.sub));
             if (!decoded || !decoded.sub)
-                throw new Error();
-            // return res.status(401).send(validation_errors.not_logged);
-            // if (decoded.)
-                // const user: User | null = await userRepository.findOneBy({id: Number(decoded.sub)});
-            res.locals.user = await userRepository.findOneBy({id: Number(decoded.sub)});
-
-            // console.log("a",user);
+                throw new Error('Cant get user with user id of NaN');
+            res.locals.user = await userRepository.findOne({ where: {id: Number(decoded.sub)}, relations: ['places']});
+            if (!res.locals.user)
+                return res.status(401).send(validation_errors.not_logged);
         } catch (error) {
-            console.log(error);
             return res.status(401).send(validation_errors.not_logged);
         }
-        // const payload = jwt.verify(accessToken, accessTokenSecret, (error, payload) => {
-        //     if (error === undefined)
-        //         return res.status(401).send(validation_errors.not_logged);
-        //         // console.log("1", error);
-        //     // console.log(payload, typeof(payload), typeof(payload.sub));
-        //     // const id: Number = Number(payload.sub);
-        //     // const user: User | null = userRepository.findOneBy({id: Number(payload.sub)})
-        //     // res.locals.user = payload;
-        //     if (payload === undefined)
-        //         return undefined;
-        //     return payload?.sub;
-        // });
-        // console.log(payload);
-        // // if (payload && )
-        // const id: Number = Number(payload.sub);
-        // const user: User | null = await userRepository.findOneBy({id: Number(payload.sub)})
-        // // call next only if it works!
         next();
 }
 
-// add guard here
-router.get("/test", authGuard,
+router.get("/me",
+    authGuard,
     async (req : Request, res : Response) => {
-        // console.log(res.locals.user);
+        const user: User = res.locals.user;
         return res.status(200).json({
-            status: 'success',
+            user
     });
 });
 
@@ -77,11 +48,10 @@ router.post("/signup",
     async (req : Request, res : Response) => {
         const errors = validationResult(req);
         errors.array().forEach(error => error.value = undefined);
-        // console.log(errors);
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array()});
+        try {
         const { email, password } = req.body;
-        // console.log(email, password);
         const user: User = userRepository.create({email: email.toLowerCase(), password});
         await userRepository.save(user);
         return res.status(201).json({
@@ -90,6 +60,14 @@ router.post("/signup",
               user,
             },
         });
+        } catch (error : any) {
+            if (error.code === '23505') {
+                return res.status(409).json({
+                  status: 'fail',
+                  message: 'User with that email already exist',
+                });
+            }
+        }
 });
 
 router.post("/login",
@@ -121,11 +99,9 @@ router.post("/login",
         });
 });
 
-// add guard here
 router.get("/logout", authGuard,
     async (req : Request, res : Response) => {
         res.cookie('access_token', '', { maxAge: -1, httpOnly: true,});
-        // console.log(req.cookies);
         return res.status(200).json({
             status: 'success',
     });
