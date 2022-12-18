@@ -10,7 +10,7 @@ export class User extends BaseEntity {
     @Column({type: 'varchar', unique: true}) // unique?
       email: string;
 
-    @Column({type: 'varchar', length: 60})
+    @Column({type: 'varchar'})
       password: string;
 
     @OneToMany(() => Place, (place) => place.user)

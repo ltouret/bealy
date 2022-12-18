@@ -18,6 +18,7 @@ prod:
 
 clean:
 	sudo docker rm $$(sudo docker ps -aq)
+	sudo docker volume prune -f
 
 fclean:
 	sudo ./fclean.sh

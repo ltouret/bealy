@@ -4,6 +4,7 @@ import travelRouter from './api/travel';
 import userRouter from './api/travel/user.controller';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 import { myDataSource } from "./app-data-source"
 
 myDataSource
@@ -19,6 +20,7 @@ const port = process.env.PORT;
 
 app.use(cors())
 app.use(bodyParser.json());
+app.use(cookieParser());
 
 app.get('/alive', (req: Request, res: Response) => {
   res.status(200).json({data : "good"})
