@@ -4,11 +4,11 @@ import { Place } from './place.entity'
 import { validation_errors } from './validation-errors'
 import { myDataSource } from "../../app-data-source"
 import { DeleteResult } from 'typeorm';
+import { User } from './user.entity';
 
 const router = express.Router();
 
-// add easter egg here
-router.get("/alive", (req : Request, res : Response) => {
+router.get("/alive", async (req : Request, res : Response) => {
     return res.send(true);
 });
 
@@ -94,22 +94,19 @@ router.get("/",
     query('favorite').toBoolean(),
     async (req : Request, res : Response) => {
         const favorite: boolean = Boolean(req.query.favorite);
-        // console.log(req.query.favorite, favorite);
         let places: Place[] = await myDataSource.getRepository(Place).find();
+        // let test = myDataSource.getRepository(User).create({email: 'lola', password: 'haha'});
+        // await myDataSource.getRepository(User).save(test);
+        // console.log(await myDataSource.getRepository(User).find({relations: ['places']})); --> this is how u get relations
         if (places.length === 0)
             return res.status(404).send();
         if (favorite === true)
-        {
             places = places.filter(elem => elem.favorite === true);
-            // console.log(dis);
-        }
-        // console.log();
         return res.status(200).json(places);
 });
 
 // SEARCH WITH A STRING IN TITLE, DESCRIPTION OR LOCALISATION AND RETURN AN ARRAY OR 404 NOT FOUND
 // add more info if no elems? like no elems in db?
-// search only in favs?
 router.get("/search",
     query('keyword', validation_errors.keyword).isString().isAlphanumeric(undefined, {ignore: " "}).isLength({min:1, max: 60}),
     query('keyword').trim().escape(),
@@ -117,14 +114,12 @@ router.get("/search",
         const errors = validationResult(req);
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array({onlyFirstError: true}) });
-        // console.log(req.query, req.query.keyword);
         const searchQuery: string | undefined = req.query.keyword?.toString();
         const places: Place[] = await myDataSource.getRepository(Place).createQueryBuilder().select()
         .where('title ILIKE :searchQuery', {searchQuery: `%${searchQuery}%`})
         .orWhere('description ILIKE :searchQuery', {searchQuery: `%${searchQuery}%`})
         .orWhere('localisation ILIKE :searchQuery', {searchQuery: `%${searchQuery}%`})
         .getMany();
-        // console.log(places);
         if (places.length > 0)
             return res.status(200).json(places);
         return res.status(404).send();

@@ -4,17 +4,12 @@ import travelRouter from './api/travel';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { myDataSource } from "./app-data-source"
-import { Place } from './api/travel/place.entity' // most likely not needed here
-
 
 myDataSource
     .initialize()
-    // .then(() => {
-    //     console.log("Data Source has been initialized!")
-    // })
     .catch((err) => {
         console.error("Error during Data Source initialization:", err)
-    })
+    });
 
 dotenv.config();
 
@@ -24,12 +19,15 @@ const port = process.env.PORT;
 app.use(cors())
 app.use(bodyParser.json());
 
-// useless maybe add easter egg here? // this is useless
 app.get('/alive', (req: Request, res: Response) => {
   res.status(200).json({data : "good"})
 });
 
 app.use('/travel', travelRouter);
+
+app.all('*', (req: Request, res: Response) => {
+  return res.status(404).send(`Route ${req.originalUrl} not found`);
+});
 
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${port}`);

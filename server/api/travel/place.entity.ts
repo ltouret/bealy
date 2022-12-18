@@ -1,6 +1,8 @@
+import { JoinColumn } from 'typeorm';
+import { ManyToOne } from 'typeorm';
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { User } from './user.entity';
 
-// check lengths of string cos maybe will break if data is too long
 @Entity()
 export class Place extends BaseEntity {
     @PrimaryGeneratedColumn()
@@ -15,10 +17,10 @@ export class Place extends BaseEntity {
     @Column({type: 'varchar', length: 20})
       title: string;
 
-    @Column({type: 'varchar', length: 50})
+    @Column({type: 'varchar', length: 60})
       description: string;
 
-    @Column({type: 'varchar', length: 50})
+    @Column({type: 'varchar', length: 60})
       localisation: string;
 
     @Column({type: 'int4'})
@@ -26,6 +28,10 @@ export class Place extends BaseEntity {
 
     @Column({type: 'boolean', default: false})
       favorite: boolean;
+
+    @ManyToOne(() => User, (user) => user.places)
+    @JoinColumn()
+    user: User;
 
     // 2fa ???????????
     // @Column({type: 'varchar', length: 70, nullable: true})
