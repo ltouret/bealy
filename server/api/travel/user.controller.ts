@@ -10,10 +10,6 @@ const router = express.Router();
 const userRepository: Repository<User> = myDataSource.getRepository(User);
 const accessTokenSecret : string =  process.env.JWT_SECRET ? process.env.JWT_SECRET : "dummysecretkey";
 
-router.get("/alive", async (req : Request, res : Response) => {
-    return res.send(true);
-});
-
 export const authGuard = async (
     req: Request,
     res: Response,
@@ -41,7 +37,6 @@ router.get("/me",
     });
 });
 
-// for now doesnt log in the user, just registers it
 router.post("/signup",
     body('email', validation_errors.email).isString().isEmail(),
     body('password', validation_errors.password).isString().isLength({min:6, max: 30}),
@@ -80,7 +75,6 @@ router.post("/login",
             return res.status(400).json({ errors: errors.array()});
         const { email, password } = req.body;
         const user : User | null = await userRepository.findOneBy({email});
-        // console.log(user);
         if (user === null || await User.comparePasswords(password, user.password) === false)
             return res.status(401).send(validation_errors.login);
         const accessToken : string = jwt.sign({email : user.email, sub: user.id}, accessTokenSecret);
@@ -92,7 +86,6 @@ router.post("/login",
             httpOnly: true,
         };
         res.cookie('access_token', accessToken, accessTokenCookieOptions);
-        // console.log(accessToken);
         return res.status(200).json({
             status: 'success',
             accessToken,

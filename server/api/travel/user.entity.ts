@@ -31,8 +31,4 @@ export class User extends BaseEntity {
     toJSON() {
       return {...this, password: undefined};
     }
-
-    // 2fa ???????????
-    // @Column({type: 'varchar', length: 70, nullable: true})
-      // avatar: string;
 }

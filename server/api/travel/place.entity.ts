@@ -32,8 +32,4 @@ export class Place extends BaseEntity {
     @ManyToOne(() => User, (user) => user.places)
     @JoinColumn()
     user: User;
-
-    // 2fa ???????????
-    // @Column({type: 'varchar', length: 70, nullable: true})
-      // avatar: string;
 }

@@ -10,11 +10,11 @@
 #                                                                              #
 # **************************************************************************** #
 
-dev:
-	sudo docker-compose -f docker-compose.dev.yaml up --build
-
 prod:
 	sudo docker-compose up --build
+
+dev:
+	sudo docker-compose -f docker-compose.dev.yaml up --build
 
 clean:
 	sudo docker rm $$(sudo docker ps -aq)

@@ -18,9 +18,9 @@ services:
     env_file:
       - .env
 
-  ################# Node prod ###################
-  node_prod:
-    container_name: node_prod
+  ################# Back prod ###################
+  back_prod:
+    container_name: back_prod
     restart: unless-stopped
     depends_on:
       - postgres

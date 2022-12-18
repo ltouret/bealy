@@ -16,7 +16,7 @@ myDataSource
 dotenv.config();
 
 const app: Express = express();
-const port = process.env.PORT;
+const port = process.env.BACK_PORT;
 
 app.use(cors())
 app.use(bodyParser.json());
