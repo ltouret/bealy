@@ -3,10 +3,10 @@ import { body, param, query, validationResult } from 'express-validator';
 import { Place } from './place.entity'
 import { validation_errors } from './validation-errors'
 import { myDataSource } from "../../app-data-source"
-import { DeleteResult } from 'typeorm';
-import { User } from './user.entity';
+import { DeleteResult, Repository } from 'typeorm';
 
 const router = express.Router();
+const placeRepository: Repository<Place> = myDataSource.getRepository(Place);
 
 router.get("/alive", async (req : Request, res : Response) => {
     return res.send(true);
@@ -35,8 +35,8 @@ router.post("/",
         const errors = validationResult(req);
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array() });
-        const place: Place = myDataSource.getRepository(Place).create(whitelist(req.body, "title", "description", "localisation", "score", "favorite"));
-        const results: Place = await myDataSource.getRepository(Place).save(place);
+        const place: Place = placeRepository.create(whitelist(req.body, "title", "description", "localisation", "score", "favorite"));
+        const results: Place = await placeRepository.save(place);
         return res.status(201).json(results);
     }
 );
@@ -59,13 +59,13 @@ router.put("/",
         const errors = validationResult(req);
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array() });
-        const place_received: Place = myDataSource.getRepository(Place).create(whitelist(req.body, "id", "title", "description", "localisation", "score", "favorite"));
-        const place_to_modify: Place | null = await myDataSource.getRepository(Place).findOneBy({
+        const place_received: Place = placeRepository.create(whitelist(req.body, "id", "title", "description", "localisation", "score", "favorite"));
+        const place_to_modify: Place | null = await placeRepository.findOneBy({
             id: place_received.id
         });
         if (place_to_modify) {
-            myDataSource.getRepository(Place).merge(place_to_modify, place_received);
-            const results: Place = await myDataSource.getRepository(Place).save(place_to_modify);
+            placeRepository.merge(place_to_modify, place_received);
+            const results: Place = await placeRepository.save(place_to_modify);
             return res.status(200).json(results);
         }
         return res.status(400).send({error: "Resource doesnt exist"});
@@ -81,7 +81,7 @@ router.delete("/:id",
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array() });
         const id: number = Number(req.params.id);
-        const result: DeleteResult = await myDataSource.getRepository(Place).delete(id);
+        const result: DeleteResult = await placeRepository.delete(id);
         if (result.affected)
             return res.status(200).send({status : 'Place deleted'});
         return res.status(404).send({status : 'Place was not deleted because it was not found'});
@@ -94,10 +94,10 @@ router.get("/",
     query('favorite').toBoolean(),
     async (req : Request, res : Response) => {
         const favorite: boolean = Boolean(req.query.favorite);
-        let places: Place[] = await myDataSource.getRepository(Place).find();
+        let places: Place[] = await placeRepository.find();
         // let test = myDataSource.getRepository(User).create({email: 'lola', password: 'haha'});
         // await myDataSource.getRepository(User).save(test);
-        // console.log(await myDataSource.getRepository(User).find({relations: ['places']})); --> this is how u get relations
+        // console.log(await myDataSource.getRepository(User).findOneBy({email : 'lola'})); //--> this is how u get relations
         if (places.length === 0)
             return res.status(404).send();
         if (favorite === true)
@@ -115,7 +115,7 @@ router.get("/search",
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array({onlyFirstError: true}) });
         const searchQuery: string | undefined = req.query.keyword?.toString();
-        const places: Place[] = await myDataSource.getRepository(Place).createQueryBuilder().select()
+        const places: Place[] = await placeRepository.createQueryBuilder().select()
         .where('title ILIKE :searchQuery', {searchQuery: `%${searchQuery}%`})
         .orWhere('description ILIKE :searchQuery', {searchQuery: `%${searchQuery}%`})
         .orWhere('localisation ILIKE :searchQuery', {searchQuery: `%${searchQuery}%`})
@@ -134,7 +134,7 @@ router.get("/score",
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array() });
         const score: number = Number(req.query.score);
-        const places: Place[] = await myDataSource.getRepository(Place).find();
+        const places: Place[] = await placeRepository.find();
         if (places.length > 0) {
             const returned_places: Place[] = [];
             places.forEach(place => {
@@ -157,7 +157,7 @@ router.get("/:id",
         if (!errors.isEmpty())
             return res.status(400).json({ errors: errors.array()});
         const id: number = Number(req.params.id);
-        const place: Place | null = await myDataSource.getRepository(Place).findOneBy({
+        const place: Place | null = await placeRepository.findOneBy({
             id: id
         });
         if (place)

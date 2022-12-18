@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import travelRouter from './api/travel';
+import userRouter from './api/travel/user.controller';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { myDataSource } from "./app-data-source"
@@ -23,6 +24,7 @@ app.get('/alive', (req: Request, res: Response) => {
   res.status(200).json({data : "good"})
 });
 
+app.use('/user', userRouter);
 app.use('/travel', travelRouter);
 
 app.all('*', (req: Request, res: Response) => {
